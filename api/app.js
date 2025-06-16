@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const pool = require("./config/db");
+const productRoutes = require("./routes/productRoutes");
 const port = 5000;
 app.use(cors());
 app.use(express.json());
@@ -29,6 +30,7 @@ app.get("/db-test", async (req, res) => {
       .json({ message: "database connection failed ", error: err.mesage });
   }
 });
+app.use("/api/products", productRoutes);
 
 app.listen(port, () => {
   console.log(`listening on port ${port}`);
