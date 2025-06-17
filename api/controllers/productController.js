@@ -32,7 +32,7 @@ async function createProduct(req, res) {
   try {
     const productData = req.body;
 
-    const newProduct = await productModel.createProduct(productData);
+    const newProduct = await productModel.addProduct(productData);
     res.status(201).json(newProduct); // 201 Created status
   } catch (error) {
     console.error("Error creating product:", error);
@@ -51,7 +51,8 @@ async function updateProduct(req, res) {
     // if (Object.keys(productData).length === 0) {
     //   return res.status(400).json({ message: 'No update data provided' });
     // }
-
+    console.log(`Debug: Received ID in controller: ${id}`);
+    console.log(`Debug: Type of ID in controller: ${typeof id}`);
     const updatedProduct = await productModel.updateProduct(id, productData);
 
     if (!updatedProduct) {

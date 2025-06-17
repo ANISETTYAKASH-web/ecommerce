@@ -55,7 +55,7 @@ async function addProduct(product) {
       category,
       image_url,
     ];
-    const result = (await client).query(query, values);
+    const result = await client.query(query, values);
     return result.rows[0];
   } finally {
     client.release();
@@ -78,10 +78,18 @@ async function updateProduct(productId, product) {
   const { name, description, price, stock_quantity, category, image_url } =
     product;
   const client = await pool.connect();
+
+  console.log(
+    `Debug: Received product ID in model: ${productId}, Type: ${typeof productId}`
+  );
+  console.log(
+    `Debug: Received product ID in model: ${productId}, Type: ${typeof productId}`
+  );
+
   try {
     const updates = [];
     const values = [];
-    const paramIndex = 1;
+    let paramIndex = 1;
     if (name != undefined) {
       updates.push(`name=$${paramIndex++}`);
       values.push(name);
@@ -110,8 +118,20 @@ async function updateProduct(productId, product) {
     values.push(productId);
     const query = `update products set ${updates.join(
       ","
-    )},updated_at=CURRENT_TIMESTAMP where product_id=${paramIndex} RETURNING * `;
-    const result = (await client).query(query, values);
+    )},updated_at=CURRENT_TIMESTAMP where product_id=$${paramIndex}
+     RETURNING * `;
+    console.log("Debug: Generated SQL Query for Update:");
+    console.log(query);
+    console.log("Debug: Values for Query:");
+    console.log(values);
+    // --- END DEBUG LINES ---
+
+    const result = await client.query(query, values);
+
+    // --- ADD THESE DEBUG LINES ---
+    console.log("Debug: Result from DB Query (rows):");
+    console.log(result.rows);
+    // --- END DEBUG LINES ---
     return result.rows[0] || null;
   } finally {
     client.release();
@@ -126,8 +146,8 @@ async function updateProduct(productId, product) {
 async function deleteProduct(product_id) {
   const client = await pool.connect();
   try {
-    const result = (await client).query(
-      `delete from products where product_id=${1} returning *`,
+    const result = await client.query(
+      `delete from products where product_id=$1 returning *`,
       [product_id]
     );
     return result.rows[0] || null;
