@@ -40,11 +40,12 @@ async function createUser(user) {
       false,
     ];
     const query =
-      "insert into users(username,email,password_hash,first_name,last_name,is_admin) values($1,$2,$3,$4,$5,$6) returning (username,email,first_name,last_name,is_admin)";
+      "insert into users(username,email,password_hash,first_name,last_name,is_admin) values($1,$2,$3,$4,$5,$6) returning username,email,first_name,last_name,is_admin";
     const result = await client.query(query, values);
+    console.log(result.rows[0]);
     return result.rows[0] || null;
   } finally {
-    pool.release();
+    client.release();
   }
 }
 /**
@@ -55,9 +56,10 @@ async function createUser(user) {
 async function getUserById(user_id) {
   const client = await pool.connect();
   try {
-    const result = client.query("select *from users where user_id=$1", [
-      user_id,
-    ]);
+    const result = client.query(
+      "select user_id, username, email, first_name, last_name, is_admin from users where user_id=$1",
+      [user_id]
+    );
     return result.rows[0] || null;
   } finally {
     pool.release();

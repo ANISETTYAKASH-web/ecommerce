@@ -2,7 +2,6 @@ const userModel = require("../models/userModel");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { use } = require("react");
 
 const jstKey = process.env.JWT_KEY;
 if (!jstKey) {
@@ -25,7 +24,7 @@ async function createNewUser(req, res) {
 
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(password, salt);
-    const newUser = userModel.createUser({
+    const newUser = await userModel.createUser({
       username,
       email,
       password_hash,
@@ -33,6 +32,8 @@ async function createNewUser(req, res) {
       last_name,
       is_admin: false,
     });
+    console.log("new user", newUser);
+    console.log("username:", newUser.username);
     const token = jwt.sign(
       {
         user: {
@@ -95,6 +96,7 @@ async function loginUser(req, res) {
       jstKey,
       { expiresIn: "1h" }
     );
+    console.log(findUserExists);
     return res.status(201).json({
       message: "login succesfull",
       user: {
