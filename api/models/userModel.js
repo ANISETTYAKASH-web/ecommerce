@@ -28,11 +28,9 @@ async function findUserByEmail(email) {
  * @returns {promise} user
  */
 async function createUser(user) {
-  const { username, email, password, first_name, last_name } = user;
+  const { username, email, password_hash, first_name, last_name } = user;
   const client = await pool.connect();
   try {
-    const salt = bcrypt.genSalt(10);
-    const password_hash = bcrypt.hash(password, salt);
     const values = [
       username,
       email,
