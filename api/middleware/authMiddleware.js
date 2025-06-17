@@ -12,21 +12,22 @@ function authorizationToken(req, res, next) {
     return res.status(400).json({ message: "token not found in header" });
   }
   try {
-    const decode = jwt.decode(jwt_key, token);
-    console.log(decode);
-    req.user = decode.user;
+    const decode = jwt.verify(token, jwt_key);
+    console.log("decode user", decode);
+    req.user = decode.findUserExists;
     next();
   } catch (error) {
     console.log("token authenticatio failed: ", error);
     if (error.name == "TokenExpiredError") {
-      res.status(401).json({ message: "token expired login again" });
+      return res.status(401).json({ message: "token expired login again" });
     }
-    res.status(401).json({ error: error.name });
+    return res.status(401).json({ error: error.name });
   }
 }
 function authenticateIsAdmin(req, res, next) {
-  if (!req.user.is_admin) {
-    res.status(401).json({ message: "admin privileges not granted" });
+  console.log("req user", req.user);
+  if (!req.user || !req.user.is_admin) {
+    return res.status(401).json({ message: "admin privileges not granted" });
   }
   next();
 }
