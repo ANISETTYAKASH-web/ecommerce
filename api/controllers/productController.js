@@ -1,5 +1,5 @@
 const productModel = require("../models/productModel");
-
+const { validationResult } = require("express-validator");
 async function getProducts(req, res) {
   try {
     const result = await productModel.getAllProducts();
@@ -13,6 +13,10 @@ async function getProducts(req, res) {
 }
 
 async function getProductById(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const result = await productModel.getProductById(id);
@@ -29,6 +33,10 @@ async function getProductById(req, res) {
 }
 
 async function createProduct(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const productData = req.body;
 
@@ -43,6 +51,10 @@ async function createProduct(req, res) {
 }
 
 async function updateProduct(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const productData = req.body; // Updated product data
@@ -74,6 +86,10 @@ async function updateProduct(req, res) {
  * DELETE /api/products/:id
  */
 async function deleteProduct(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { id } = req.params;
     const deletedProduct = await productModel.deleteProduct(id);
