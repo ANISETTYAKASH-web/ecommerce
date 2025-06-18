@@ -2,6 +2,7 @@ const userModel = require("../models/userModel");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { validationResult } = require("express-validator");
 
 const jstKey = process.env.JWT_KEY;
 if (!jstKey) {
@@ -10,11 +11,15 @@ if (!jstKey) {
 }
 async function createNewUser(req, res) {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
     const { username, email, password, first_name, last_name } = req.body;
 
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: "every detail is not found" });
-    }
+    // if (!username || !email || !password) {
+    //   return res.status(400).json({ message: "every detail is not found" });
+    // } NOT REQUIRED AS WE ARE USING EXPRESS VALIDATOR
     const userAlreadyExists = await userModel.findUserByEmail(email);
     if (userAlreadyExists) {
       return res
@@ -68,10 +73,14 @@ async function createNewUser(req, res) {
 
 async function loginUser(req, res) {
   try {
-    const { username, email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ message: "every detail is not found" });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
+    const { username, email, password } = req.body;
+    // if (!email || !password) {
+    //   return res.status(400).json({ message: "every detail is not found" });
+    // }NOT REQUIRED AS WE ARE USING EXPRESS VALIDATOR
     const findUserExists = await userModel.findUserByEmail(email);
     if (!findUserExists) {
       return res
