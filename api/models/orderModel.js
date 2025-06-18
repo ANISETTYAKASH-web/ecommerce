@@ -17,11 +17,7 @@ async function createOrder(user_id, items) {
     for (const item of items) {
       total_amount += item.quantity * item.price;
     }
-    const orderResult = await client.query(
-      orderQuery,
-      [user_id],
-      [total_amount]
-    );
+    const orderResult = await client.query(orderQuery, [user_id, total_amount]);
 
     const newOrder = orderResult.rows[0];
 
@@ -30,11 +26,11 @@ async function createOrder(user_id, items) {
     for (const item of items) {
       const { product_id, price, quantity } = item;
       const productCheckQuery =
-        "select stock_quantity from products where product_id=$1";
+        "select stock_quantity from products where product_id=$1 FOR UPDATE;";
       const productCheckResult = await client.query(productCheckQuery, [
         product_id,
       ]);
-      if (productCheckResult.length == 0) {
+      if (productCheckResult.rows.length === 0) {
         throw new Error(`product with ${product_id} does not exist`);
       }
       if (productCheckResult.rows[0].stock_quantity < quantity) {
@@ -46,29 +42,24 @@ async function createOrder(user_id, items) {
       const orderItemsQuery =
         "insert into order_items(order_id,product_id,quantity,price_at_purchase) values($1,$2,$3,$4) returning *";
 
-      const orderItemsResult = await client.query(
-        orderItemsQuery,
-        [newOrder.order_id],
-        [product_id],
-        [quantity],
-        [price]
-      );
+      const orderItemsResult = await client.query(orderItemsQuery, [
+        newOrder.order_id,
+        product_id,
+        quantity,
+        price,
+      ]);
       oderItemsToInsert.push(orderItemsResult.rows[0]);
       //update products table
 
-      const prodcutQuantityUpdateQuery = `update from products set stock_quantity=${
-        stock_quantity - quantity
-      } where product_id={1}`;
-      const productUpdateResult = await client.query(
-        prodcutQuantityUpdateQuery,
-        [product_id]
-      );
+      const prodcutQuantityUpdateQuery =
+        "update products set stock_quantity=stock_quantity - $1 where product_id=$2";
+      await client.query(prodcutQuantityUpdateQuery, [quantity, product_id]);
     }
     await client.query("COMMIT");
-    return { newOrder, orderItemsResult };
+    return { ...newOrder, items: orderItemsResult };
   } catch (err) {
     await client.query("ROLLBACK");
-    console.log("error:", err);
+    console.error("error:", err);
     throw err;
   } finally {
     client.release();
