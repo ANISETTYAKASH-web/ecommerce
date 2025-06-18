@@ -60,8 +60,44 @@ async function createOrder(user_id, items) {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("error:", err);
+    throw err; // throws error to controller(folder)
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * @param {string} user_id
+ * @returns {{promise}} orders
+ */
+async function getOrdersByUser(user_id) {
+  const client = pool.connect();
+  try {
+    //fetch orders from order table
+    const orderQuery = "select *from orders where user_id=$1";
+    const orderResult = await client.query(orderQuery, [user_id]);
+    const orders = orderResult.rows;
+    //fetch order_items for each order
+    for (const order of orders) {
+      const orderItemsQuery =
+        "select oi*,p.name as product_name,p.image_url from order_items oi join products p oi.product_id==p.product_id where oi.order_id=$1";
+
+      const orderItemsResult = await client.query(orderItemsQuery, [
+        order.order_id,
+      ]);
+      order.items = orderItemsResult.rows[0];
+    }
+    return orders;
+  } catch (err) {
+    console.error("err:", err);
     throw err;
   } finally {
     client.release();
   }
 }
+/**
+ * @param {string} user_id
+ * @param {string} order_id
+ * @returns {promise}
+ */
+async function getOrderbyIdAndUser(user_id, order_id) {}
