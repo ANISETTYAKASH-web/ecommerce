@@ -74,23 +74,24 @@ async function getOrdersByUser(user_id) {
   const client = pool.connect();
   try {
     //fetch orders from order table
-    const orderQuery = "select *from orders where user_id=$1";
+    const orderQuery =
+      "select *from orders where user_id=$1 order by created_at DESC";
     const orderResult = await client.query(orderQuery, [user_id]);
     const orders = orderResult.rows;
     //fetch order_items for each order
     for (const order of orders) {
       const orderItemsQuery =
-        "select oi*,p.name as product_name,p.image_url from order_items oi join products p oi.product_id==p.product_id where oi.order_id=$1";
+        "select oi*,p.name as product_name,p.image_url from order_items oi join products p ON oi.product_id=p.product_id where oi.order_id=$1";
 
       const orderItemsResult = await client.query(orderItemsQuery, [
         order.order_id,
       ]);
-      order.items = orderItemsResult.rows[0];
+      order.items = orderItemsResult.rows;
     }
     return orders;
   } catch (err) {
     console.error("err:", err);
-    throw err;
+    // throw err;
   } finally {
     client.release();
   }
@@ -106,19 +107,25 @@ async function getOrderbyIdAndUser(user_id, order_id) {
     //fetch orders from order table
     const orderQuery = "select *from orders where user_id=$1 and order_id=$2";
     const orderResult = await client.query(orderQuery, [user_id, order_id]);
-    const orders = orderResult.rows[0];
+    const order = orderResult.rows[0];
     //fetch order_items for  order
-
+    if (!order) return null;
     const orderItemQuery =
-      "select oi*,p.name as product_name,p.image_url from order_items oi join products p oi.product_id==p.product_id where oi.order_id=$1";
+      "select oi*,p.name as product_name,p.image_url from order_items oi join products p on oi.product_id=p.product_id where oi.order_id=$1";
 
     const orderItemsResult = await client.query(orderItemQuery, [order_id]);
-    orders.items = orderItemsResult.rows[0];
-    return orders;
+    order.items = orderItemsResult.rows;
+    return order;
   } catch (err) {
     console.error(err);
-    throw err;
+    // throw err;
   } finally {
     client.release();
   }
 }
+
+module.exports = {
+  createOrder,
+  getOrderbyIdAndUser,
+  getOrdersByUser,
+};
