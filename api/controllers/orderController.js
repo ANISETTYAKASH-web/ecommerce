@@ -48,6 +48,23 @@ async function getOrders(req, res) {
     console.error("error in ordercontroller:", err);
     return res
       .status(500)
-      .json({ message: "order creation failed", error: err.message });
+      .json({
+        message: "getting all orders of user failed",
+        error: err.message,
+      });
+  }
+}
+
+async function getOrdersById(req, res) {
+  try {
+    const user_id = req.user.id;
+    const { order_id } = req.params;
+    const result = await orderModel.getOrderbyIdAndUser(user_id, order_id);
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error("error in ordercontroller:", err);
+    return res
+      .status(500)
+      .json({ message: "getting order details failed", error: err.message });
   }
 }
