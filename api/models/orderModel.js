@@ -100,4 +100,25 @@ async function getOrdersByUser(user_id) {
  * @param {string} order_id
  * @returns {promise}
  */
-async function getOrderbyIdAndUser(user_id, order_id) {}
+async function getOrderbyIdAndUser(user_id, order_id) {
+  const client = await pool.connect();
+  try {
+    //fetch orders from order table
+    const orderQuery = "select *from orders where user_id=$1 and order_id=$2";
+    const orderResult = await client.query(orderQuery, [user_id, order_id]);
+    const orders = orderResult.rows[0];
+    //fetch order_items for  order
+
+    const orderItemQuery =
+      "select oi*,p.name as product_name,p.image_url from order_items oi join products p oi.product_id==p.product_id where oi.order_id=$1";
+
+    const orderItemsResult = await client.query(orderItemQuery, [order_id]);
+    orders.items = orderItemsResult.rows[0];
+    return orders;
+  } catch (err) {
+    console.error(err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
