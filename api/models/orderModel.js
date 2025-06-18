@@ -33,7 +33,8 @@ async function createOrder(user_id, items) {
       if (productCheckResult.rows.length === 0) {
         throw new Error(`product with ${product_id} does not exist`);
       }
-      if (productCheckResult.rows[0].stock_quantity < quantity) {
+      const stock_quantity = productCheckResult.rows[0].stock_quantity;
+      if (stock_quantity < quantity) {
         throw new Error(
           `product with ${product_id} have only this quantity ${stock_quantity} but u placed ${quantity}`
         );
@@ -56,10 +57,10 @@ async function createOrder(user_id, items) {
       await client.query(prodcutQuantityUpdateQuery, [quantity, product_id]);
     }
     await client.query("COMMIT");
-    return { ...newOrder, items: orderItemsResult };
+    return { ...newOrder, items: oderItemsToInsert };
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("error:", err);
+    console.error("error in model:", err);
     throw err; // throws error to controller(folder)
   } finally {
     client.release();
@@ -71,7 +72,7 @@ async function createOrder(user_id, items) {
  * @returns {{promise}} orders
  */
 async function getOrdersByUser(user_id) {
-  const client = pool.connect();
+  const client = await pool.connect();
   try {
     //fetch orders from order table
     const orderQuery =
@@ -81,13 +82,15 @@ async function getOrdersByUser(user_id) {
     //fetch order_items for each order
     for (const order of orders) {
       const orderItemsQuery =
-        "select oi*,p.name as product_name,p.image_url from order_items oi join products p ON oi.product_id=p.product_id where oi.order_id=$1";
+        "select oi.*,p.name as product_name,p.image_url from order_items oi join products p ON oi.product_id=p.product_id where oi.order_id=$1;";
 
       const orderItemsResult = await client.query(orderItemsQuery, [
         order.order_id,
       ]);
+      console.log("orderItemsResult:", orderItemsResult);
       order.items = orderItemsResult.rows;
     }
+
     return orders;
   } catch (err) {
     console.error("err:", err);
@@ -111,7 +114,7 @@ async function getOrderbyIdAndUser(user_id, order_id) {
     //fetch order_items for  order
     if (!order) return null;
     const orderItemQuery =
-      "select oi*,p.name as product_name,p.image_url from order_items oi join products p on oi.product_id=p.product_id where oi.order_id=$1";
+      "select oi.*,p.name as product_name,p.image_url from order_items oi join products p on oi.product_id=p.product_id where oi.order_id=$1";
 
     const orderItemsResult = await client.query(orderItemQuery, [order_id]);
     order.items = orderItemsResult.rows;

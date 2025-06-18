@@ -15,6 +15,8 @@ function authorizationToken(req, res, next) {
     const decode = jwt.verify(token, jwt_key);
     console.log("decode user", decode);
     req.user = decode.findUserExists;
+    console.log("req user", req.user);
+
     next();
   } catch (error) {
     console.log("token authenticatio failed: ", error);

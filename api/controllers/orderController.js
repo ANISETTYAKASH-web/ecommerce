@@ -3,7 +3,8 @@ const productModel = require("../models/productModel");
 
 async function createOrder(req, res) {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.user_id;
+    console.log("user id printing:", user_id);
     const { items } = req.body;
     if (!items || items.length === 0) {
       return res
@@ -45,7 +46,7 @@ async function createOrder(req, res) {
 
 async function getOrders(req, res) {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.user_id;
     const result = await orderModel.getOrdersByUser(user_id);
     res.status(200).json(result);
   } catch (err) {
@@ -59,9 +60,10 @@ async function getOrders(req, res) {
 
 async function getOrdersById(req, res) {
   try {
-    const user_id = req.user.id;
+    const user_id = req.user.user_id;
     const { order_id } = req.params;
     const result = await orderModel.getOrderbyIdAndUser(user_id, order_id);
+    console.log(result);
     if (!result) {
       return res.status(404).json({
         message: "Order not found or you do not have permission to view it.",
