@@ -5,35 +5,39 @@ async function createOrder(req, res) {
   try {
     const user_id = req.user.id;
     const { items } = req.body;
-    if (!items) {
+    if (!items || items.length === 0) {
       return res
         .status(400)
         .json({ message: "minimum one item should be selected" });
     }
-    if (!items.product_id || !items.quantity || items.quantity <= 0) {
-      return res.status(400).json({
-        message:
-          "Item should have product id and quantity also quantity should be > 0 ",
+    const validateItems = [];
+    for (const item of items) {
+      if (!item.product_id || !item.quantity || item.quantity <= 0) {
+        return res.status(400).json({
+          message:
+            "Item should have product id and quantity also quantity should be > 0 ",
+        });
+      }
+
+      const product = await productModel.getProductById(item.product_id);
+      if (!product) {
+        return res
+          .status(404)
+          .json({ message: `product with ${item.product_id} is not found` });
+      }
+      validateItems.push({
+        quantity: item.quantity,
+        product_id: item.product_id,
+        price: product.price,
       });
     }
-    const validateItems = [];
-    const product = await productModel.getProductById(items.product_id);
-    if (!product) {
-      return res
-        .status(404)
-        .json({ message: `product with ${product_id} is not found` });
-    }
-    validateItems.push({
-      user_id: user_id,
-      quantity: quantity,
-      product_id: product_id,
-      price: product.price,
-    });
     const result = await orderModel.createOrder(user_id, validateItems);
-    return res.status(201).json(result);
+    res
+      .status(201)
+      .json({ message: "order created succesfully", order: result });
   } catch (err) {
     console.error("error in ordercontroller:", err);
-    return res
+    res
       .status(500)
       .json({ message: "order creation failed", error: err.message });
   }
@@ -43,15 +47,13 @@ async function getOrders(req, res) {
   try {
     const user_id = req.user.id;
     const result = await orderModel.getOrdersByUser(user_id);
-    return res.status(200).json(result);
+    res.status(200).json(result);
   } catch (err) {
     console.error("error in ordercontroller:", err);
-    return res
-      .status(500)
-      .json({
-        message: "getting all orders of user failed",
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "getting all orders of user failed",
+      error: err.message,
+    });
   }
 }
 
@@ -60,11 +62,22 @@ async function getOrdersById(req, res) {
     const user_id = req.user.id;
     const { order_id } = req.params;
     const result = await orderModel.getOrderbyIdAndUser(user_id, order_id);
-    return res.status(200).json(result);
+    if (!result) {
+      return res.status(404).json({
+        message: "Order not found or you do not have permission to view it.",
+      });
+    }
+    res.status(200).json(result);
   } catch (err) {
     console.error("error in ordercontroller:", err);
-    return res
+    res
       .status(500)
       .json({ message: "getting order details failed", error: err.message });
   }
 }
+
+module.exports = {
+  createOrder,
+  getOrders,
+  getOrdersById,
+};
